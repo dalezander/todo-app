@@ -11,6 +11,9 @@ function renderTodos() {
     todos.forEach((todo, index) => {
         const listItem = document.createElement('li');
         listItem.className = 'todo-item';
+        if (todo.completed) {
+            listItem.classList.add('is-complete-row');
+        }
 
         const todoLabel = document.createElement('label');
         todoLabel.className = 'todo-label';
@@ -22,6 +25,7 @@ function renderTodos() {
         checkbox.setAttribute('aria-label', `Mark ${todo.text} as completed`);
         checkbox.addEventListener('change', () => {
             todo.completed = checkbox.checked;
+            listItem.classList.toggle('is-complete-row', todo.completed);
             renderTodos();
         });
 
@@ -40,12 +44,25 @@ function renderTodos() {
         deleteButton.textContent = 'Delete';
         deleteButton.setAttribute('aria-label', `Delete ${todo.text}`);
         deleteButton.addEventListener('click', () => {
-            todos.splice(index, 1);
-            renderTodos();
+            listItem.classList.add('is-leaving');
+            const removeItem = () => {
+                todos.splice(index, 1);
+                renderTodos();
+            };
+            const fallback = setTimeout(removeItem, 400);
+            listItem.addEventListener('animationend', () => {
+                clearTimeout(fallback);
+                removeItem();
+            }, { once: true });
         });
 
         listItem.append(todoLabel, deleteButton);
         todoList.append(listItem);
+
+        if (todo.isNew) {
+            todo.isNew = false;
+            listItem.classList.add('is-entering');
+        }
     });
 
     emptyState.classList.toggle('is-hidden', todos.length > 0);
@@ -60,7 +77,7 @@ todoForm.addEventListener('submit', (event) => {
         return;
     }
 
-    todos.push({ text: value, completed: false });
+    todos.push({ text: value, completed: false, isNew: true });
     todoInput.value = '';
     todoInput.focus();
     renderTodos();
